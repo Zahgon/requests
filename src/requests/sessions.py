@@ -890,11 +890,7 @@ class Session(SessionRedirectMixin):
 
         Adapters are sorted in descending order by prefix length.
         """
-        self.adapters[prefix] = adapter
-        keys_to_move = [k for k in self.adapters if len(k) < len(prefix)]
-
-        for key in keys_to_move:
-            self.adapters[key] = self.adapters.pop(key)
+        pass
 
     def __getstate__(self) -> dict[str, Any]:
         state = {attr: getattr(self, attr, None) for attr in self.__attrs__}

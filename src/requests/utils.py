@@ -150,11 +150,7 @@ def dict_to_sequence(
     d: _t.SupportsItems[Any, Any] | Iterable[tuple[Any, Any]],
 ) -> Iterable[tuple[Any, Any]]:
     """Returns an internal sequence dictionary update."""
-
-    if isinstance(d, _SupportsItems):
-        return d.items()
-
-    return d
+    pass
 
 
 def super_len(o: Any) -> int:
@@ -328,14 +324,7 @@ def extract_zipped_paths(path: str) -> str:
 @contextlib.contextmanager
 def atomic_open(filename: str) -> Generator[BufferedWriter, None, None]:
     """Write a file to the disk in an atomic fashion"""
-    tmp_descriptor, tmp_name = tempfile.mkstemp(dir=os.path.dirname(filename))
-    try:
-        with os.fdopen(tmp_descriptor, "wb") as tmp_handler:
-            yield tmp_handler
-        os.replace(tmp_name, filename)
-    except BaseException:
-        os.remove(tmp_name)
-        raise
+    pass
 
 
 def from_key_val_list(
@@ -358,13 +347,7 @@ def from_key_val_list(
 
     :rtype: OrderedDict
     """
-    if value is None:
-        return None
-
-    if isinstance(value, (str, bytes, bool, int)):
-        raise ValueError("cannot encode objects that are not 2-tuples")
-
-    return OrderedDict(value)
+    pass
 
 
 @overload
@@ -428,12 +411,7 @@ def parse_list_header(value: str) -> list[str]:
     :return: :class:`list`
     :rtype: list
     """
-    result: list[str] = []
-    for item in _parse_list_header(value):
-        if item[:1] == item[-1:] == '"':
-            item = unquote_header_value(item[1:-1])
-        result.append(item)
-    return result
+    pass
 
 
 # From mitsuhiko/werkzeug (used with permission).
@@ -503,9 +481,7 @@ def dict_from_cookiejar(cj: CookieJar) -> dict[str, str | None]:
     :param cj: CookieJar object to extract cookies from.
     :rtype: dict
     """
-
-    cookie_dict = {cookie.name: cookie.value for cookie in cj}
-    return cookie_dict
+    pass
 
 
 def add_dict_to_cookiejar(cj: CookieJar, cookie_dict: dict[str, str]) -> CookieJar:
@@ -642,33 +618,7 @@ def get_unicode_from_response(r: Response) -> str | bytes | None:
 
     :rtype: str
     """
-    warnings.warn(
-        (
-            "In requests 3.0, get_unicode_from_response will be removed. For "
-            "more information, please see the discussion on issue #2266. (This"
-            " warning should only appear once.)"
-        ),
-        DeprecationWarning,
-    )
-    if r.content is None:  # type: ignore[reportUnnecessaryComparison]
-        return None
-
-    tried_encodings: list[str] = []
-
-    # Try charset from content-type
-    encoding = get_encoding_from_headers(r.headers)
-
-    if encoding:
-        try:
-            return str(r.content, encoding)
-        except UnicodeError:
-            tried_encodings.append(encoding)
-
-    # Fall back:
-    try:
-        return str(r.content, encoding or "utf-8", errors="replace")
-    except TypeError:
-        return r.content
+    pass
 
 
 # The unreserved URI characters (RFC 3986)

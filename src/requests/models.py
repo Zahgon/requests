@@ -112,23 +112,7 @@ class RequestEncodingMixin:
     @property
     def path_url(self) -> str:
         """Build the path URL to use."""
-
-        url: list[str] = []
-
-        p = urlsplit(cast(str, self.url))
-
-        path = p.path
-        if not path:
-            path = "/"
-
-        url.append(path)
-
-        query = p.query
-        if query:
-            url.append("?")
-            url.append(query)
-
-        return "".join(url)
+        pass
 
     @overload
     @staticmethod
@@ -272,12 +256,7 @@ class RequestHooksMixin:
         """Deregister a previously registered hook.
         Returns True if the hook existed, False if not.
         """
-
-        try:
-            self.hooks[event].remove(hook)
-            return True
-        except ValueError:
-            return False
+        pass
 
 
 class Request(RequestHooksMixin):
@@ -865,26 +844,19 @@ class Response:
         the status code is between 200 and 400, this will return True. This
         is **not** a check to see if the response code is ``200 OK``.
         """
-        try:
-            self.raise_for_status()
-        except HTTPError:
-            return False
-        return True
+        pass
 
     @property
     def is_redirect(self) -> bool:
         """True if this Response is a well-formed HTTP redirect that could have
         been processed automatically (by :meth:`Session.resolve_redirects`).
         """
-        return "location" in self.headers and self.status_code in REDIRECT_STATI
+        pass
 
     @property
     def is_permanent_redirect(self) -> bool:
         """True if this Response one of the permanent versions of redirect."""
-        return "location" in self.headers and self.status_code in (
-            codes.moved_permanently,
-            codes.permanent_redirect,
-        )
+        pass
 
     @property
     def next(self) -> PreparedRequest | None:
@@ -894,12 +866,7 @@ class Response:
     @property
     def apparent_encoding(self) -> str | None:
         """The apparent encoding, provided by the charset_normalizer or chardet libraries."""
-        if chardet is not None:
-            return chardet.detect(self.content)["encoding"]
-        else:
-            # If no character detection library is available, we'll fall back
-            # to a standard Python utf-8 str.
-            return "utf-8"
+        pass
 
     @overload
     def iter_content(
@@ -929,48 +896,7 @@ class Response:
         bytes will be returned. This can be bypassed by manually setting
         `encoding` on the response.
         """
-
-        def generate() -> Generator[bytes, None, None]:
-            # Special case for urllib3.
-            if hasattr(self.raw, "stream"):
-                try:
-                    yield from self.raw.stream(chunk_size, decode_content=True)
-                except ProtocolError as e:
-                    raise ChunkedEncodingError(e)
-                except DecodeError as e:
-                    raise ContentDecodingError(e)
-                except ReadTimeoutError as e:
-                    raise ConnectionError(e)
-                except SSLError as e:
-                    raise RequestsSSLError(e)
-            else:
-                # Standard file-like object.
-                while True:
-                    chunk = self.raw.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield chunk
-
-            self._content_consumed = True
-
-        if self._content_consumed and isinstance(self._content, bool):
-            raise StreamConsumedError()
-        elif chunk_size is not None and not isinstance(chunk_size, int):  # type: ignore[reportUnnecessaryIsInstance]  # runtime guard for untyped callers
-            raise TypeError(
-                f"chunk_size must be an int, it is instead a {type(chunk_size)}."
-            )
-
-        if self._content_consumed:
-            # simulate reading small chunks of the content
-            content = cast(bytes, self._content)
-            chunks = iter_slices(content, chunk_size)
-        else:
-            chunks = generate()
-
-        if decode_unicode:
-            chunks = stream_decode_response_unicode(chunks, self)
-
-        return chunks
+        pass
 
     @overload
     def iter_lines(
@@ -1002,49 +928,12 @@ class Response:
 
         .. note:: This method is not reentrant safe.
         """
-
-        pending: str | bytes | None = None
-
-        for chunk in self.iter_content(
-            chunk_size=chunk_size, decode_unicode=decode_unicode
-        ):
-            if pending is not None:
-                # TODO: remove cast after iter_lines rewrite
-                chunk = cast("str | bytes", pending + chunk)  # type: ignore[operator]
-
-            if delimiter:
-                lines = chunk.split(delimiter)  # type: ignore[arg-type]
-            else:
-                lines = chunk.splitlines()
-
-            if lines and lines[-1] and chunk and lines[-1][-1] == chunk[-1]:
-                pending = lines.pop()
-            else:
-                pending = None
-
-            yield from lines
-
-        if pending is not None:
-            yield pending
+        pass
 
     @property
     def content(self) -> bytes:
         """Content of the response, in bytes."""
-
-        if self._content is False:
-            # Read the contents.
-            if self._content_consumed:
-                raise RuntimeError("The content for this response was already consumed")
-
-            if self.status_code == 0 or self.raw is None:
-                self._content = None
-            else:
-                self._content = b"".join(self.iter_content(CONTENT_CHUNK_SIZE)) or b""
-
-        self._content_consumed = True
-        # don't need to release the connection; that's been handled by urllib3
-        # since we exhausted the data.
-        return self._content  # type: ignore[return-value]
+        pass
 
     @property
     def text(self) -> str:
@@ -1058,31 +947,7 @@ class Response:
         non-HTTP knowledge to make a better guess at the encoding, you should
         set ``r.encoding`` appropriately before accessing this property.
         """
-
-        # Try charset from content-type
-        content = None
-        encoding = self.encoding
-
-        if not self.content:
-            return ""
-
-        # Fallback to auto-detected encoding.
-        if self.encoding is None:
-            encoding = self.apparent_encoding
-
-        # Decode unicode from given encoding.
-        try:
-            content = str(self.content, encoding or "utf-8", errors="replace")
-        except (LookupError, TypeError):
-            # A LookupError is raised if the encoding was not found which could
-            # indicate a misspelling or similar mistake.
-            #
-            # A TypeError can be raised if encoding is None
-            #
-            # So we try blindly encoding.
-            content = str(self.content, errors="replace")
-
-        return content
+        pass
 
     def json(self, **kwargs: Any) -> Any:
         r"""Decodes the JSON response body (if any) as a Python object.
@@ -1093,78 +958,16 @@ class Response:
         :raises requests.exceptions.JSONDecodeError: If the response body does not
             contain valid json.
         """
-
-        if not self.encoding and self.content and len(self.content) > 3:
-            # No encoding set. JSON RFC 4627 section 3 states we should expect
-            # UTF-8, -16 or -32. Detect which one to use; If the detection or
-            # decoding fails, fall back to `self.text` (using charset_normalizer to make
-            # a best guess).
-            encoding = guess_json_utf(self.content)
-            if encoding is not None:
-                try:
-                    return complexjson.loads(self.content.decode(encoding), **kwargs)
-                except UnicodeDecodeError:
-                    # Wrong UTF codec detected; usually because it's not UTF-8
-                    # but some other 8-bit codec.  This is an RFC violation,
-                    # and the server didn't bother to tell us what codec *was*
-                    # used.
-                    pass
-                except JSONDecodeError as e:
-                    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
-
-        try:
-            return complexjson.loads(self.text, **kwargs)
-        except JSONDecodeError as e:
-            # Catch JSON-related errors and raise as requests.JSONDecodeError
-            # This aliases json.JSONDecodeError and simplejson.JSONDecodeError
-            raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+        pass
 
     @property
     def links(self) -> dict[str, dict[str, str]]:
         """Returns the parsed header links of the response, if any."""
-
-        header = self.headers.get("link")
-
-        resolved_links: dict[str, dict[str, str]] = {}
-
-        if header:
-            links = parse_header_links(header)
-
-            for link in links:
-                key = link.get("rel") or link.get("url")
-                if key is not None:
-                    resolved_links[key] = link
-
-        return resolved_links
+        pass
 
     def raise_for_status(self) -> None:
         """Raises :class:`HTTPError`, if one occurred."""
-
-        http_error_msg = ""
-        if isinstance(self.reason, bytes):
-            # We attempt to decode utf-8 first because some servers
-            # choose to localize their reason strings. If the string
-            # isn't utf-8, we fall back to iso-8859-1 for all other
-            # encodings. (See PR #3538)
-            try:
-                reason = self.reason.decode("utf-8")
-            except UnicodeDecodeError:
-                reason = self.reason.decode("iso-8859-1")
-        else:
-            reason = self.reason
-
-        if 400 <= self.status_code < 500:
-            http_error_msg = (
-                f"{self.status_code} Client Error: {reason} for url: {self.url}"
-            )
-
-        elif 500 <= self.status_code < 600:
-            http_error_msg = (
-                f"{self.status_code} Server Error: {reason} for url: {self.url}"
-            )
-
-        if http_error_msg:
-            raise HTTPError(http_error_msg, response=self)
+        pass
 
     def close(self) -> None:
         """Releases the connection back to the pool. Once this method has been

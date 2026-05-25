@@ -254,17 +254,7 @@ class HTTPAdapter(BaseAdapter):
         :param block: Block when no free connections are available.
         :param pool_kwargs: Extra keyword arguments used to initialize the Pool Manager.
         """
-        # save these values for pickling
-        self._pool_connections = connections
-        self._pool_maxsize = maxsize
-        self._pool_block = block
-
-        self.poolmanager = PoolManager(
-            num_pools=connections,
-            maxsize=maxsize,
-            block=block,
-            **pool_kwargs,
-        )
+        pass
 
     def proxy_manager_for(self, proxy: str, **proxy_kwargs: Any) -> Any:
         """Return urllib3 ProxyManager for the given proxy.
@@ -523,34 +513,7 @@ class HTTPAdapter(BaseAdapter):
         :param proxies: (optional) A Requests-style dictionary of proxies used on this request.
         :rtype: urllib3.HTTPConnectionPool
         """
-        warnings.warn(
-            (
-                "`get_connection` has been deprecated in favor of "
-                "`get_connection_with_tls_context`. Custom HTTPAdapter subclasses "
-                "will need to migrate for Requests>=2.32.2. Please see "
-                "https://github.com/psf/requests/pull/6710 for more details."
-            ),
-            DeprecationWarning,
-        )
-        proxy = select_proxy(url, proxies)
-
-        if proxy:
-            proxy = prepend_scheme_if_needed(proxy, "http")
-            proxy_url = parse_url(proxy)
-            if not proxy_url.host:
-                raise InvalidProxyURL(
-                    "Please check proxy URL. It is malformed "
-                    "and could be missing the host."
-                )
-            proxy_manager = self.proxy_manager_for(proxy)
-            conn = proxy_manager.connection_from_url(url)
-        else:
-            # Only scheme should be lower case
-            parsed = urlparse(url)
-            url = parsed.geturl()
-            conn = self.poolmanager.connection_from_url(url)
-
-        return conn
+        pass
 
     def close(self) -> None:
         """Disposes of any internal state.
